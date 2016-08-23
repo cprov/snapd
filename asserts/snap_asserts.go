@@ -316,3 +316,92 @@ func assembleSnapRevision(assert assertionBase) (Assertion, error) {
 		timestamp:     timestamp,
 	}, nil
 }
+
+// SnapValidation holds a validation assertion, describing that a combination of
+// (snap-id, snap-revision, approved-snap-id, approved-revision, series)
+// has been validated by testing.
+
+type SnapValidation struct {
+	assertionBase
+	since time.Time
+	until time.Time
+}
+
+// Series returns the series for which the validation holds.
+func (snapval *SnapValidation) Series() string {
+	return snapval.HeaderString("series")
+}
+
+// SnapId returns the ID of the gating snap.
+func (snapval *SnapValidation) SnapId() string {
+	return snapval.HeaderString("snap-id")
+}
+
+// ApprovedSnapId returns the ID of the gated snap.
+func (snapval *SnapValidation) ApprovedSnapId() string {
+	return snapval.HeaderString("approved-snap-id")
+}
+
+// SnapRevision returns the revision of the gating snap.
+func (snapval *SnapValidation) SnapRevision() string {
+	return snapval.HeaderString("snap-revision")
+}
+
+// ApprovedSnapRevision returns the revision of the gated snap.
+func (snapval *SnapValidation) ApprovedSnapRevision() string {
+	return snapval.HeaderString("approved-snap-revision")
+}
+
+// Since returns the timestamp of assertion creation
+func (snapval *SnapValidation) Since() time.Time {
+	return snapval.since
+}
+
+// Until returns the timestamp of assertion revocation
+func (snapval *SnapValidation) Until() time.Time {
+	return snapval.until
+}
+
+func assembleValidation(assert assertionBase) (Assertion, error) {
+
+	_, err := checkNotEmptyString(assert.headers, "series")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = checkNotEmptyString(assert.headers, "snap-id")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = checkNotEmptyString(assert.headers, "approved-snap-id")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = checkUint(assert.headers, "snap-revision", 64)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = checkUint(assert.headers, "approved-snap-revision", 64)
+	if err != nil {
+		return nil, err
+	}
+
+	since, err := checkRFC3339Date(assert.headers, "since")
+	if err != nil {
+		return nil, err
+	}
+
+	until, err := checkRFC3339Date(assert.headers, "until")
+	if err != nil {
+		return nil, err
+	}
+
+	return &SnapValidation{
+		assertionBase: assert,
+		since:         since,
+		until:         until,
+	}, nil
+}
